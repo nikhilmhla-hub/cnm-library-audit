@@ -4,10 +4,11 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, RefreshCw, Target, BookOpen, Clock, Activity, MessageSquare, ShieldAlert, Award, TrendingUp, AlertTriangle } from "lucide-react";
+import { ArrowLeft, RefreshCw, Target, BookOpen, Clock, Activity, MessageSquare, ShieldAlert, Award, TrendingUp, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { ScoreBadge, getGradeDetails } from "@/components/ui/score-badge";
 import { cn } from "@/lib/utils";
 import { StudentSession } from "@/lib/scoring/engine";
+import { BOOTCAMP_CONFIG } from "@/lib/config/bootcamp";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const loadJsPDF = (): Promise<any> => {
@@ -35,6 +36,61 @@ const loadJsPDF = (): Promise<any> => {
   });
 };
 
+const PRIMARY_OBSERVATIONS: Record<string, string> = {
+  "Focus": "Your preparation currently loses the most efficiency during deep-work study sessions.",
+  "Revision": "Your responses indicate that you spend significantly more time completing new chapters than revising previously completed ones.",
+  "Accuracy": "Your responses show that conceptual understanding is developing faster than your problem-solving accuracy.",
+  "Time Management": "Your study routine is consistent, but your test-taking pacing limits further improvement.",
+  "Confidence": "Your responses indicate that exam-related anxiety is impacting your preparation consistency."
+};
+
+const WHAT_THIS_MEANS: Record<string, string> = {
+  "Focus": "Daily study hours are interrupted by micro-distractions, breaking cognitive focus and extending the time required to understand new concepts.",
+  "Revision": "Concepts learned 30 days ago are beginning to fade, requiring you to relearn material before mock tests and keeping scores flat.",
+  "Accuracy": "You understand concepts in theory but struggle to apply them to unfamiliar, complex questions under exam conditions.",
+  "Time Management": "You are losing marks due to time pressure and silly mistakes during mock tests, rather than a lack of knowledge.",
+  "Confidence": "Test doubt is causing hesitation during exams, which leads to silly mistakes and drops in motivation after a low score."
+};
+
+const PREP_SUMMARY_OBSERVATIONS: Record<string, string> = {
+  "Focus": "Focus duration breaks limiting efficiency.",
+  "Revision": "Revision decay is limiting overall progress.",
+  "Accuracy": "Problem-solving accuracy limits score stability.",
+  "Time Management": "Test pacing limits score potential.",
+  "Confidence": "Exam anxiety limits preparation consistency."
+};
+
+const STRONG_FOUNDATIONS: Record<string, { observation: string; explanation: string }> = {
+  "Focus": {
+    observation: "Your study consistency and focus stamina are better than average.",
+    explanation: "Your ability to study for 90 minutes without interruption gives you a strong foundation for deep work."
+  },
+  "Revision": {
+    observation: "You maintain a structured revision schedule.",
+    explanation: "Your habit of keeping summary notes prevents memory decay and saves prep time before major tests."
+  },
+  "Accuracy": {
+    observation: "Your conceptual application and problem-solving accuracy are developing well.",
+    explanation: "You work through difficult questions systematically rather than looking at solutions too quickly, building a reliable conceptual foundation."
+  },
+  "Time Management": {
+    observation: "You analyze your mock tests and track mistakes consistently.",
+    explanation: "Your regular test reviews help you identify pacing issues early and prevent repeating the same mistakes."
+  },
+  "Confidence": {
+    observation: "You remain committed to studying and keep a positive mindset after poor mock tests.",
+    explanation: "Your resilience prevents test scores from disrupting your study momentum, which is key to long-term success."
+  }
+};
+
+const WHY_THIS_RECOMMENDATION: Record<string, string> = {
+  "Focus": "Your Focus score ({score}%) indicates a need for structured deep work intervals to prevent screen-related distractions.",
+  "Revision": "Your Revision score ({score}%) indicates a need to set up a systematic revision timetable to prevent memory decay.",
+  "Accuracy": "Your Accuracy score ({score}%) indicates a need for error log tracking to reduce silly mistakes during practice.",
+  "Time Management": "Your Time Management score ({score}%) indicates a need for structured mock test analysis to improve pacing.",
+  "Confidence": "Your Confidence score ({score}%) indicates a need for anxiety-reduction techniques and mock recovery steps."
+};
+
 export default function ReportPage() {
   const router = useRouter();
 
@@ -48,7 +104,7 @@ export default function ReportPage() {
       const { grade } = getGradeDetails(sessionData.overallScore);
       const payload = {
         submissionId: sessionData.submissionId,
-        source: "Kiosk",
+        source: "Library",
         name: sessionData.student.name,
         phone: sessionData.student.phone,
         class: sessionData.student.class,
@@ -138,7 +194,7 @@ export default function ReportPage() {
         primaryBottleneck: session.primaryBottleneck ? session.primaryBottleneck.category : "None",
         potentialGain: session.potentialImprovement.gain,
         bookingStatus: "Waiting",
-        source: "Kiosk"
+        source: "Library"
       };
 
       const response = await fetch("/api/bookings", {
@@ -224,7 +280,7 @@ export default function ReportPage() {
       });
       doc.setTextColor(140, 140, 140);
       doc.setFontSize(8.5);
-      doc.text(`Generated On: ${genDate}  |  Kiosk Source: Kiosk`, margin, 34);
+      doc.text(`Generated On: ${genDate}  |  Source: Library Audit`, margin, 34);
       
       // 2. Student Info Card
       doc.setDrawColor(220, 220, 220);
@@ -258,10 +314,23 @@ export default function ReportPage() {
       doc.setTextColor(18, 18, 18);
       doc.text("Academic Diagnostics Summary", margin + 5, 91);
       
+      // Find highest category for PDF Strong Foundation
+      const strongCategoryPDF = Object.entries(session.metrics).reduce((max, current) => {
+        return current[1] > max[1] ? current : max;
+      }, ["Focus", 0])[0];
+      const strongCategoryLabelMapPDF: Record<string, string> = {
+        "Focus": "Focus & stamina",
+        "Revision": "Structured revision",
+        "Accuracy": "Problem-solving accuracy",
+        "Time Management": "Mock test reviews",
+        "Confidence": "Mindset & resilience"
+      };
+      const strongLabelPDF = strongCategoryLabelMapPDF[strongCategoryPDF] || strongCategoryPDF;
+
       doc.setFontSize(9.5);
       doc.text(`Overall Score: ${session.overallScore}% (${overallGrade})`, margin + 5, 99);
-      doc.text(`Student Type: ${session.archetype}`, margin + 5, 106);
-      doc.text(`Main Problem: ${session.primaryBottleneck ? session.primaryBottleneck.category : "None"}`, margin + 95, 99);
+      doc.text(`Strong Foundation: ${strongLabelPDF}`, margin + 5, 106);
+      doc.text(`Highest Impact Area: ${session.primaryBottleneck ? session.primaryBottleneck.category : "None"}`, margin + 95, 99);
       
       // 4. Performance Indexes Table
       doc.setFillColor(240, 240, 240);
@@ -298,14 +367,14 @@ export default function ReportPage() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(10.5);
       doc.setTextColor(30, 64, 175);
-      doc.text("Preparation Strategy Roadmap Outlook", margin + 5, yOffset + 11);
+      doc.text("Estimated Improvement Potential", margin + 5, yOffset + 11);
       
       doc.setFont("helvetica", "normal");
       doc.setFontSize(9);
       doc.setTextColor(30, 30, 30);
       const outputText = session.potentialImprovement.gain > 0 
-        ? `Addressing main problems can raise overall metrics from ${session.potentialImprovement.currentScore} to ${session.potentialImprovement.potentialScore} (a gain of +${session.potentialImprovement.gain} Marks).`
-        : `Performance benchmarks verified at ${session.potentialImprovement.currentScore}. Continue focus to secure high ranks.`;
+        ? `Addressing your highest impact area can raise overall metrics from ${session.potentialImprovement.currentScore}% to ${session.potentialImprovement.potentialScore}% (an estimated improvement of +${session.potentialImprovement.gain}%).`
+        : `Performance benchmarks verified at ${session.potentialImprovement.currentScore}%. Continue focus to secure high ranks.`;
       doc.text(outputText, margin + 5, yOffset + 18);
       
       // 6. Desk booking footer
@@ -401,6 +470,86 @@ export default function ReportPage() {
     return getGradeDetails(catScore).grade;
   };
 
+  // Find highest scoring category for Strong Foundations
+  const strongCategory = Object.entries(metrics).reduce((max, current) => {
+    return current[1] > max[1] ? current : max;
+  }, ["Focus", 0])[0];
+
+  // Find overall quality label for summary
+  const getOverallPrepLabel = (score: number) => {
+    if (score >= 90) return "Excellent";
+    if (score >= 75) return "Good";
+    if (score >= 60) return "Average";
+    if (score >= 40) return "At Risk";
+    return "Critical";
+  };
+  const overallPrepLabel = getOverallPrepLabel(overallScore);
+
+  // Dynamic values
+  const primaryCat = primaryBottleneck ? primaryBottleneck.category : null;
+  const primaryObsText = primaryCat ? PRIMARY_OBSERVATIONS[primaryCat] : "Your core study systems are verified stable across all measured categories.";
+  const whatMeansText = primaryCat ? WHAT_THIS_MEANS[primaryCat] : "You have established a solid prep foundation. Focus on advanced test strategies to maximize your competitive rank potential.";
+  const summaryObsText = primaryCat ? PREP_SUMMARY_OBSERVATIONS[primaryCat] : "Preparation benchmarks are verified stable.";
+  
+  // Strong foundations mappings
+  const strongObsText = STRONG_FOUNDATIONS[strongCategory]?.observation || "Your consistency is developing well.";
+  const strongExplanationText = STRONG_FOUNDATIONS[strongCategory]?.explanation || "Your commitment to standard preparation cycles is positive.";
+
+  const strongCategoryLabelMap: Record<string, string> = {
+    "Focus": "Focus and study stamina",
+    "Revision": "Structured revision habits",
+    "Accuracy": "Conceptual problem-solving accuracy",
+    "Time Management": "Mock test review habits",
+    "Confidence": "Exam-day mindset and resilience"
+  };
+  const strongCategoryLabel = strongCategoryLabelMap[strongCategory] || strongCategory;
+
+  const getWeakestPhrases = () => {
+    const sorted = Object.entries(metrics).sort((a, b) => a[1] - b[1]);
+    const mapping: Record<string, string> = {
+      "Revision": "revision process",
+      "Time Management": "time allocation and test analysis",
+      "Focus": "study focus duration",
+      "Accuracy": "problem-solving accuracy",
+      "Confidence": "exam-day anxiety management"
+    };
+    const weak = sorted.slice(0, 3).map(([cat]) => mapping[cat]);
+    if (weak.length === 0) return "study system structure";
+    if (weak.length === 1) return weak[0];
+    if (weak.length === 2) return `${weak[0]} and ${weak[1]}`;
+    return `${weak[0]}, ${weak[1]} and ${weak[2]}`;
+  };
+
+  const getWeakestCategoryBulletPoints = () => {
+    const sorted = Object.entries(metrics).sort((a, b) => a[1] - b[1]);
+    const bullets: string[] = [];
+    
+    // Take bottom 3 categories
+    const bottom3 = sorted.slice(0, 3).map(([cat]) => cat);
+    
+    bottom3.forEach(cat => {
+      if (cat === "Time Management") {
+        bullets.push("Revision");
+        bullets.push("Time Management");
+        bullets.push("Test Analysis");
+      } else if (cat === "Focus") {
+        bullets.push("Focus");
+      } else if (cat === "Revision") {
+        bullets.push("Revision");
+      } else if (cat === "Accuracy") {
+        bullets.push("Accuracy");
+      } else if (cat === "Confidence") {
+        bullets.push("Confidence");
+      }
+    });
+    
+    const result = Array.from(new Set(bullets));
+    if (result.length === 0) {
+      return ["Revision", "Time Management", "Test Analysis"];
+    }
+    return result;
+  };
+
   return (
     <div className="w-full max-w-4xl py-6 space-y-8 animate-fade-in font-sans">
       {/* Top Action Header */}
@@ -437,211 +586,63 @@ export default function ReportPage() {
           {/* Overall Score Badge */}
           <div className="flex flex-col items-center justify-center space-y-4 py-6 border-b md:border-b-0 md:border-r border-border/60">
             <span className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">
-              Overall Audit Score
+              Overall Score
             </span>
             <ScoreBadge score={overallScore} size="lg" className="w-full max-w-[220px]" />
-            <span className="text-xs text-zinc-400 font-mono bg-zinc-900 px-3 py-1 rounded-full border border-border/50">
-              Current Level: <span className="font-bold text-white">{grade}</span>
-            </span>
+            
+            <div className="text-center space-y-1 mt-2">
+              <span className="text-xs text-gold font-mono block font-bold">Report Confidence: High</span>
+              <span className="text-[10px] text-zinc-500 block font-mono">Generated from your audit responses.</span>
+            </div>
           </div>
 
-          {/* Results Summary and Demographics */}
-          <div className="md:col-span-2 space-y-6">
+          {/* Preparation Summary snapshot */}
+          <div className="md:col-span-2 space-y-4">
             <div className="space-y-1">
-              <span className="text-xs font-mono text-gold uppercase tracking-wider">Audit Results Summary</span>
-              <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
-                {overallScore >= 75 ? "Academic Benchmarks Stable" : overallScore >= 40 ? "Academic Action Advised" : "Academic Intervention Needed"}
-              </h2>
+              <span className="text-xs font-mono text-gold uppercase tracking-wider block">Diagnostic Overview</span>
+              <h3 className="text-2xl font-bold text-white tracking-tight">Preparation Summary</h3>
             </div>
-            <p className="text-zinc-400 text-sm leading-relaxed font-light">
-              {overallScore >= 75 
-                ? "Your exam preparation satisfies core target thresholds. Gaps are identified in syllabus revision pacing and error logging consistency, but conceptual practice and mindset parameters are verified solid."
-                : overallScore >= 40
-                ? "Your exam preparation shows moderate stability, but structural gaps in mock testing schedules and syllabus revisions require prompt adjustments to prevent further performance slippage."
-                : "Your exam preparation metrics indicate a critical performance status. Immediate support and academic intervention are recommended to address large pending syllabus and test execution anxiety."
-              }
-            </p>
-
-            {/* Demographics and Calculated Badges Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-              <div className="bg-zinc-900/50 p-3 rounded-lg border border-border/40">
-                <span className="block text-[9px] text-zinc-500 uppercase tracking-wider font-mono">Conducted On</span>
-                <span className="text-xs font-semibold text-white font-mono">{conductedDate}</span>
-              </div>
-              <div className="bg-zinc-900/50 p-3 rounded-lg border border-border/40">
-                <span className="block text-[9px] text-zinc-500 uppercase tracking-wider font-mono">Student</span>
-                <span className="text-xs font-semibold text-white font-mono truncate block">
-                  {student.name}
+            
+            <div className="bg-zinc-950/60 p-5 rounded-2xl border border-border/80 space-y-3 font-sans text-sm text-left">
+              <div className="flex justify-between items-center py-1 border-b border-border/20">
+                <span className="text-zinc-400 font-medium">Overall Preparation</span>
+                <span className={cn("font-bold font-mono text-xs px-2 py-0.5 rounded border uppercase tracking-wider scale-95", 
+                  overallScore >= 75 ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/5" : 
+                  overallScore >= 60 ? "text-gold border-gold/20 bg-gold/5" : 
+                  overallScore >= 40 ? "text-amber-500 border-amber-500/20 bg-amber-500/5" : 
+                  "text-red-400 border-red-500/20 bg-red-500/5"
+                )}>
+                  {overallPrepLabel}
                 </span>
               </div>
-              <div className="bg-zinc-900/50 p-3 rounded-lg border border-border/40">
-                <span className="block text-[9px] text-zinc-500 uppercase tracking-wider font-mono">Class & Focus</span>
-                <span className="text-xs font-semibold text-white font-mono truncate block">
-                  {student.class} • {student.exam}
-                </span>
+              <div className="flex justify-between items-start py-1 border-b border-border/20 gap-4">
+                <span className="text-zinc-400 font-medium shrink-0">Primary Observation</span>
+                <span className="text-white text-right text-xs leading-normal font-light">{summaryObsText}</span>
               </div>
-              <div className="bg-zinc-900/50 p-3 rounded-lg border border-border/40">
-                <span className="block text-[9px] text-zinc-500 uppercase tracking-wider font-mono">Student Type</span>
-                <span className="text-xs font-bold text-gold font-mono truncate block">
-                  {archetype}
-                </span>
+              <div className="flex justify-between items-center py-1 border-b border-border/20">
+                <span className="text-zinc-400 font-medium">Strong Foundation</span>
+                <span className="text-white text-right text-xs font-semibold">{strongCategoryLabel}</span>
+              </div>
+              <div className="flex justify-between items-center py-1 border-b border-border/20">
+                <span className="text-zinc-400 font-medium">Highest Impact Area</span>
+                <span className="text-red-400 text-right text-xs font-semibold font-mono">{primaryCat || "None"}</span>
+              </div>
+              <div className="flex justify-between items-center py-1">
+                <span className="text-zinc-400 font-medium">Estimated Improvement</span>
+                <span className="text-emerald-400 font-bold font-mono text-sm">+{potentialImprovement.gain}%</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Primary Bottleneck and Dynamic Insight Box */}
-      {primaryBottleneck ? (
-        <div className="bg-[#141414] border border-border rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-red-500" />
-          
-          <div className="flex items-start gap-4 flex-1">
-            <div className="h-12 w-12 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0 mt-1">
-              <ShieldAlert className="h-6 w-6 animate-pulse" />
-            </div>
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-mono text-red-400 uppercase tracking-wider">Main Problem Identified</span>
-              <h3 className="text-white font-bold text-lg font-sans">
-                {primaryBottleneck.category} <span className="text-zinc-500 font-normal">({primaryBottleneck.score}%)</span>
-              </h3>
-              <p className="text-zinc-300 text-sm font-light leading-relaxed">
-                {personalizedInsight}
-              </p>
-            </div>
-          </div>
-
-          <div className="shrink-0 flex items-center gap-3 bg-red-500/5 border border-red-500/20 rounded-xl py-3 px-5 text-center w-full md:w-auto justify-center">
-            <div>
-              <span className="text-[9px] text-zinc-500 uppercase font-mono block">Issue Impact</span>
-              <span className="text-sm font-extrabold text-red-400 font-mono">Critical Low</span>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-[#141414] border border-border rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-emerald-500" />
-          
-          <div className="flex items-start gap-4 flex-1">
-            <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-1">
-              <Award className="h-6 w-6 animate-pulse" />
-            </div>
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider">Performance Status</span>
-              <h3 className="text-white font-bold text-lg font-sans">
-                All core performance systems are strong.
-              </h3>
-              <p className="text-zinc-300 text-sm font-light leading-relaxed">
-                {personalizedInsight}
-              </p>
-            </div>
-          </div>
-
-          <div className="shrink-0 flex items-center gap-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl py-3 px-5 text-center w-full md:w-auto justify-center">
-            <div>
-              <span className="text-[9px] text-zinc-500 uppercase font-mono block">Audit Diagnostics</span>
-              <span className="text-sm font-extrabold text-emerald-400 font-mono">Optimal</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Potential Improvement Card */}
-      <div className="bg-card border border-border rounded-2xl p-6 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-emerald-500" />
-        
-        <div className="flex items-start gap-4">
-          <div className="h-12 w-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
-            <TrendingUp className="h-6 w-6" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider">Potential Improvement Profile</span>
-            <h3 className="text-white font-bold text-lg font-sans">Unlock Performance Gains</h3>
-            <p className="text-zinc-400 text-sm font-light leading-relaxed">
-              {potentialImprovement.gain > 0 ? (
-                <>
-                  Addressing your top three problems can elevate your overall score from <span className="font-semibold text-white">{potentialImprovement.currentScore}</span> to <span className="font-semibold text-gold">{potentialImprovement.potentialScore}</span> (a realistic gain of <span className="font-semibold text-emerald-400">+{potentialImprovement.gain}</span> points).
-                </>
-              ) : (
-                <>
-                  Your performance benchmarks are already outstanding at <span className="font-semibold text-gold">{potentialImprovement.currentScore}</span>. Continue with your consistency to secure peak ranks.
-                </>
-              )}
-            </p>
-          </div>
+      {/* Category Performance Matrix */}
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 space-y-4 text-left">
+        <div className="bg-zinc-900/30 p-2 border border-border/20 rounded-xl">
+          <span className="text-[10px] uppercase font-mono text-zinc-500 tracking-widest pl-2">Category Performance Index</span>
         </div>
 
-        <div className="flex items-center gap-4 shrink-0 bg-zinc-900/60 p-3 rounded-xl border border-border/60 w-full md:w-auto justify-center">
-          <div className="text-center px-3">
-            <span className="block text-[8px] text-zinc-500 font-mono uppercase">Current</span>
-            <span className="text-base font-extrabold text-white font-mono">{potentialImprovement.currentScore}</span>
-          </div>
-          <div className="text-zinc-600 font-mono text-sm">➔</div>
-          <div className="text-center px-3">
-            <span className="block text-[8px] text-emerald-400 font-mono uppercase">Potential</span>
-            <span className="text-base font-extrabold text-emerald-400 font-mono">{potentialImprovement.potentialScore}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Top 3 Bottlenecks & Detailed Category Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Side: Top 3 Bottlenecks card (or Success card if none exist) */}
-        <div className="bg-card border border-border rounded-2xl p-6 space-y-4 md:col-span-1 flex flex-col justify-between">
-          <div className="space-y-3">
-            {topBottlenecks.length > 0 ? (
-              <>
-                <div className="flex items-center gap-2 text-red-400">
-                  <AlertTriangle className="h-5 w-5" />
-                  <h3 className="text-white font-bold text-lg">Top 3 Problems</h3>
-                </div>
-                <p className="text-zinc-400 text-xs font-light leading-relaxed">
-                  These categories present the largest opportunities for score gains once resolved.
-                </p>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 text-emerald-400">
-                  <Award className="h-5 w-5" />
-                  <h3 className="text-white font-bold text-lg">Diagnostics Clear</h3>
-                </div>
-                <p className="text-zinc-400 text-xs font-light leading-relaxed">
-                  All systems verified stable. No active problems detected. Keep up the consistent work!
-                </p>
-              </>
-            )}
-          </div>
-
-          {topBottlenecks.length > 0 ? (
-            <div className="space-y-2.5 pt-2">
-              {topBottlenecks.map((bottleneck, idx) => (
-                <div key={bottleneck.category} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/60 border border-border/80">
-                  <div className="flex items-center gap-2.5 text-zinc-300 font-sans text-xs">
-                    <span className="text-red-400 font-mono font-bold text-xs">{idx + 1}.</span>
-                    <span className="truncate max-w-[130px] font-medium">{bottleneck.category}</span>
-                  </div>
-                  <div className="flex items-center gap-2 font-mono">
-                    <span className="text-xs text-zinc-400">{bottleneck.score}%</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/20 text-red-400 font-bold uppercase scale-90">
-                      Low
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-center text-xs text-emerald-400 font-mono font-bold uppercase tracking-wider">
-              ✓ Stable Performance
-            </div>
-          )}
-        </div>
-
-        {/* Right Side: Detailed category scores */}
-        <div className="md:col-span-2 space-y-3">
-          <div className="bg-zinc-900/30 p-2 border border-border/20 rounded-xl">
-            <span className="text-[10px] uppercase font-mono text-zinc-500 tracking-widest pl-2">Category Performance Index</span>
-          </div>
-
+        <div className="grid grid-cols-1 gap-3.5">
           {Object.entries(metrics).map(([catName, catScore]) => {
             const isRevision = catName === "Revision";
             const isAccuracy = catName === "Accuracy";
@@ -658,14 +659,14 @@ export default function ReportPage() {
 
             return (
               <div key={catName} className={cn(
-                "p-4 rounded-xl border flex items-center justify-between gap-4 transition-all duration-300",
+                "p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300",
                 isPrimary 
-                  ? "bg-red-500/[0.02] border-red-500/30 hover:border-red-500/50" 
-                  : "bg-card border-border hover:border-gold/30"
+                  ? "bg-red-500/[0.01] border-red-500/20 hover:border-red-500/40" 
+                  : "bg-card border-border hover:border-gold/20"
               )}>
                 <div className="flex items-center gap-3">
                   <div className={cn(
-                    "h-9 w-9 rounded-lg flex items-center justify-center",
+                    "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
                     isPrimary 
                       ? "bg-red-500/10 text-red-400 border border-red-500/20" 
                       : "bg-[#1E1E1E] text-zinc-400 border border-border"
@@ -676,13 +677,13 @@ export default function ReportPage() {
                     <h4 className="text-white font-bold text-sm flex items-center gap-2">
                       {catName}
                       {isPrimary && (
-                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-red-500/25 border border-red-500/40 text-red-400 uppercase tracking-widest font-extrabold scale-90">
-                          Main Problem
+                        <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-red-500/15 border border-red-500/30 text-red-400 uppercase tracking-widest font-extrabold scale-90">
+                          Primary Opportunity
                         </span>
                       )}
                       {!isPrimary && isBottleneck && (
                         <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 uppercase tracking-widest font-bold scale-90">
-                          Problem
+                          Opportunity
                         </span>
                       )}
                     </h4>
@@ -690,8 +691,20 @@ export default function ReportPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 font-mono">
-                  <span className={cn("text-xs px-2 py-0.5 rounded border font-semibold", getCategoryColorClass(catScore))}>
+                {/* Progress bar on card */}
+                <div className="flex items-center gap-4 flex-1 sm:justify-end">
+                  <div className="h-1.5 w-full bg-zinc-900 border border-border/20 rounded-full overflow-hidden relative max-w-[120px] hidden sm:block">
+                    <div 
+                      style={{ width: `${catScore}%` }} 
+                      className={cn("h-full rounded-full",
+                        catScore >= 75 ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]" :
+                        catScore >= 60 ? "bg-gold shadow-[0_0_6px_rgba(212,175,55,0.3)]" :
+                        catScore >= 40 ? "bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.3)]" :
+                        "bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.3)]"
+                      )}
+                    />
+                  </div>
+                  <span className={cn("text-xs px-2 py-0.5 rounded border font-semibold font-mono", getCategoryColorClass(catScore))}>
                     {catScore}%
                   </span>
                 </div>
@@ -701,9 +714,140 @@ export default function ReportPage() {
         </div>
       </div>
 
+      {/* Primary Observation & What This Means */}
+      <div className="bg-[#141414]/90 border border-border rounded-2xl p-6 relative overflow-hidden flex flex-col gap-4 text-left">
+        <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-red-500/70" />
+        
+        <div className="flex items-start gap-4">
+          <div className="h-10 w-10 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 shrink-0 mt-0.5">
+            <ShieldAlert className="h-5.5 w-5.5" />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono text-red-400 uppercase tracking-wider block">Primary Observation</span>
+            <h3 className="text-white font-bold text-base leading-snug font-sans">
+              {primaryObsText}
+            </h3>
+          </div>
+        </div>
+        
+        <div className="pl-14 border-t border-border/15 pt-4 space-y-1">
+          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">What This Means</span>
+          <p className="text-zinc-300 text-sm leading-relaxed font-light">
+            {whatMeansText}
+          </p>
+        </div>
+      </div>
 
-      {/* Phase 2: Study Plan Section */}
-      <div className="bg-card border border-border rounded-2xl p-8 relative overflow-hidden shadow-2xl space-y-6">
+      {/* Strong Foundations */}
+      <div className="bg-[#141414]/90 border border-border rounded-2xl p-6 relative overflow-hidden flex flex-col gap-4 text-left">
+        <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-emerald-500/70" />
+        
+        <div className="flex items-start gap-4">
+          <div className="h-10 w-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+            <Award className="h-5.5 w-5.5" />
+          </div>
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider block">Strong Foundations</span>
+            <h3 className="text-white font-bold text-base leading-snug font-sans">
+              {strongObsText}
+            </h3>
+          </div>
+        </div>
+        
+        <div className="pl-14 border-t border-border/15 pt-4 space-y-1">
+          <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider block">Impact Detail</span>
+          <p className="text-zinc-300 text-sm leading-relaxed font-light">
+            {strongExplanationText}
+          </p>
+        </div>
+      </div>
+
+      {/* Highest Impact Area & Improvement Potential */}
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 text-left">
+        <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-blue-500/70" />
+        
+        <div className="flex items-start gap-4 flex-1">
+          <div className="h-12 w-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 mt-0.5">
+            <TrendingUp className="h-6 w-6" />
+          </div>
+          <div className="space-y-2">
+            <span className="text-[10px] font-mono text-blue-400 uppercase tracking-wider block">Highest Impact Area</span>
+            <h3 className="text-white font-bold text-lg font-sans">
+              {primaryCat || "Advanced Strategy"}
+            </h3>
+            <p className="text-zinc-400 text-sm font-light leading-relaxed">
+              {potentialImprovement.gain > 0 ? (
+                <>
+                  Addressing this specific diagnostic bottleneck could significantly raise your overall preparation index.
+                </>
+              ) : (
+                <>
+                  Performance benchmarks verified stable at peak limits. Continue focus to secure high ranks.
+                </>
+              )}
+            </p>
+            <div className="pt-1">
+              <span className="text-[9px] text-zinc-500 block italic leading-tight font-mono">
+                How We Calculated This: Estimated using your lowest scoring preparation dimensions.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 shrink-0 bg-zinc-950/60 p-5 rounded-2xl border border-border/80 w-full md:w-56 font-mono text-xs">
+          <div className="flex justify-between items-center py-0.5">
+            <span className="text-zinc-500">Current Preparation Score</span>
+            <span className="text-white font-bold">{potentialImprovement.currentScore}%</span>
+          </div>
+          <div className="flex justify-between items-center py-0.5 border-b border-border/20 pb-2">
+            <span className="text-zinc-500">Potential Preparation Score</span>
+            <span className="text-gold font-bold">{potentialImprovement.potentialScore}%</span>
+          </div>
+          <div className="flex justify-between items-center pt-1.5">
+            <span className="text-emerald-400 font-semibold">Estimated Improvement</span>
+            <span className="text-emerald-400 font-extrabold text-sm">+{potentialImprovement.gain}%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* What Your Report Says */}
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 text-left space-y-4">
+        <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight font-sans">What Your Report Says</h3>
+        <p className="text-zinc-500 text-[10px] font-mono uppercase tracking-widest leading-none">Based on your answers...</p>
+        <div className="space-y-4 text-zinc-300 text-sm md:text-base leading-relaxed font-light font-sans">
+          <p>You're putting in enough effort.</p>
+          <p>
+            However, your <span className="text-white font-semibold">{getWeakestPhrases()}</span> are costing you valuable marks.
+          </p>
+          <p>These are process problems, not intelligence problems.</p>
+        </div>
+      </div>
+
+      {/* Good News */}
+      <div className="bg-emerald-500/[0.02] border border-emerald-500/20 hover:border-emerald-500/30 rounded-2xl p-6 md:p-8 text-left relative overflow-hidden shadow-lg">
+        <div className="absolute top-0 bottom-0 left-0 w-[4px] bg-emerald-500/70" />
+        <div className="flex items-start gap-4">
+          <div className="h-10 w-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+            <CheckCircle2 className="h-5.5 w-5.5" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-emerald-400 font-sans">Good News</h3>
+            <p className="text-zinc-300 text-sm md:text-base leading-relaxed font-light font-sans">
+              These problems are fixable. Students with a preparation pattern similar to yours often improve their performance after correcting their study system.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="text-center py-4 space-y-1">
+        <div className="text-zinc-700 text-sm font-mono tracking-widest leading-none">──────────────────────────</div>
+        <div className="text-zinc-400 text-xs font-mono uppercase tracking-[0.2em]">Recommended Next Step</div>
+        <div className="text-zinc-700 text-sm font-mono tracking-widest leading-none">──────────────────────────</div>
+      </div>
+
+      {/* Study System Reset Bootcamp Card */}
+      <div className="bg-card border border-border rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl space-y-6">
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
         
         <div className="flex flex-col lg:flex-row items-center gap-8">
@@ -711,7 +855,7 @@ export default function ReportPage() {
           <div className="w-full lg:w-1/3 shrink-0 rounded-xl overflow-hidden border border-border bg-zinc-950/40 relative aspect-video lg:aspect-square">
             <Image 
               src="/offline-kiosk-session.png" 
-              alt="Offline Mentor Session Illustration"
+              alt="Study System Reset Bootcamp Illustration"
               fill
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 33vw"
@@ -719,47 +863,182 @@ export default function ReportPage() {
             />
           </div>
           
-          {/* Strategy booking information */}
-          <div className="flex-1 space-y-4 text-left">
+          <div className="flex-1 space-y-5 text-left">
             <div className="space-y-1">
-              <span className="text-xs font-mono text-blue-400 uppercase tracking-wider">Step 2: Strategy Roadmap</span>
-              <h2 className="text-2xl md:text-3xl font-bold text-white tracking-tight">Unlock Your Custom Study Path</h2>
+              <span className="text-[10px] font-mono text-blue-400 uppercase tracking-widest block">Recommended based on your Performance Audit.</span>
+              <h3 className="text-2xl font-bold text-white">🎯 Study System Reset Bootcamp</h3>
             </div>
-            <p className="text-zinc-400 text-sm leading-relaxed font-light">
-              Receive a detailed, topic-wise diagnostic study plan tailored specifically to address your main problems. Book your free 1-on-1 counseling session with our senior mentors at CNM System Labs to finalize your preparation roadmap.
-            </p>
-            
-            <div className="pt-2">
-              <button
-                onClick={handleBookSession}
-                disabled={isBooking || session.sessionStatus === "Booked"}
-                className={cn(
-                  "w-full sm:w-auto px-10 py-4 font-bold text-sm rounded-xl tracking-wide uppercase transition-all duration-300 min-h-[56px] flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_20px_rgba(59,130,246,0.15)]",
-                  session.sessionStatus === "Booked"
-                    ? "bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 text-white border border-blue-500 hover:border-blue-600 hover:shadow-[0_4px_25px_rgba(59,130,246,0.25)]"
-                )}
-              >
-                {isBooking ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                    Reserving Strategy Session...
-                  </>
-                ) : session.sessionStatus === "Booked" ? (
-                  <>Session Reserved ✓</>
-                ) : (
-                  <>Get My Study Plan</>
-                )}
-              </button>
+
+            {/* Badges Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-border/40 text-zinc-300 text-xs font-mono">
+                <span>📍</span>
+                <span>CNM System Labs</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-border/40 text-zinc-300 text-xs font-mono">
+                <span>🕒</span>
+                <span>90 Minutes</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-border/40 text-zinc-300 text-xs font-mono">
+                <span>👥</span>
+                <span>Small Group Workshop</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-border/40 text-zinc-300 text-xs font-mono">
+                <span>🎯</span>
+                <span>Personalized Guidance</span>
+              </div>
+            </div>
+
+            {/* You'll Learn bullet points */}
+            <div className="bg-zinc-950/40 border border-border/60 rounded-xl p-4 space-y-2.5">
+              <h4 className="text-white text-xs font-mono uppercase tracking-wider mb-2">You'll Learn</h4>
+              <div className="flex items-center gap-2 text-zinc-300 text-xs font-mono">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>Why your marks are stuck</span>
+              </div>
+              <div className="flex items-center gap-2 text-zinc-300 text-xs font-mono">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>How toppers structure revision</span>
+              </div>
+              <div className="flex items-center gap-2 text-zinc-300 text-xs font-mono">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>How to analyse mock tests</span>
+              </div>
+              <div className="flex items-center gap-2 text-zinc-300 text-xs font-mono">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>Your personalised 30-day action plan</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Report Footer / Version Info */}
-      <div className="flex justify-between items-center text-[10px] text-zinc-600 font-mono pt-4 border-t border-border/40">
-        <span>Operational Audit Engine: v1.0.0</span>
-        <span>Diagnostic Session Schema: {session.reportVersion || "legacy"}</span>
+
+      {/* Why We Recommended This */}
+      <div className="bg-card/40 border border-border/60 rounded-2xl p-6 text-left space-y-3">
+        <h4 className="text-sm font-bold text-white uppercase tracking-wider font-sans">Why We Recommended This</h4>
+        <p className="text-zinc-300 text-sm leading-relaxed font-light font-sans">
+          We recommend this bootcamp because your audit indicates improvement opportunities in:
+        </p>
+        <div className="space-y-1.5 pl-1">
+          {getWeakestCategoryBulletPoints().map((bullet) => (
+            <div key={bullet} className="flex items-center gap-2 text-zinc-300 text-xs font-mono">
+              <span className="text-emerald-400 font-bold">✓</span>
+              <span>{bullet}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-zinc-300 text-sm leading-relaxed font-light font-sans">
+          This bootcamp focuses specifically on improving these areas.
+        </p>
+      </div>
+
+      {/* Upcoming Bootcamp Card */}
+      <div className="bg-card border-2 border-gold/40 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl space-y-6">
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-gold to-transparent" />
+        <div className="space-y-1 text-left">
+          <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight font-sans">
+            📅 Upcoming Study System Reset Bootcamp
+          </h3>
+          <p className="text-zinc-400 text-xs md:text-sm font-light font-sans">
+            Recommended based on your Performance Audit
+          </p>
+        </div>
+
+        {/* Large Easy-to-Read Info Chips */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-left">
+          <div className="bg-[#1E1E1E]/80 border border-border p-4 rounded-xl space-y-1">
+            <span className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider block">📅 Date</span>
+            <span className="text-white text-sm md:text-base font-bold font-sans">{BOOTCAMP_CONFIG.date}</span>
+          </div>
+          <div className="bg-[#1E1E1E]/80 border border-border p-4 rounded-xl space-y-1">
+            <span className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider block">🕒 Time</span>
+            <span className="text-white text-sm md:text-base font-bold font-sans">{BOOTCAMP_CONFIG.time}</span>
+          </div>
+          <div className="bg-[#1E1E1E]/80 border border-border p-4 rounded-xl space-y-1">
+            <span className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider block">📍 Venue</span>
+            <span className="text-white text-sm md:text-base font-bold font-sans">{BOOTCAMP_CONFIG.venue}</span>
+          </div>
+          <div className="bg-[#1E1E1E]/80 border border-border p-4 rounded-xl space-y-1">
+            <span className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider block">👥 Format</span>
+            <span className="text-white text-sm md:text-base font-bold font-sans">{BOOTCAMP_CONFIG.format}</span>
+          </div>
+          <div className="bg-[#1E1E1E]/80 border border-border p-4 rounded-xl space-y-1 sm:col-span-2 md:col-span-1">
+            <span className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider block">⏱ Duration</span>
+            <span className="text-white text-sm md:text-base font-bold font-sans">{BOOTCAMP_CONFIG.duration}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Trust Section */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-2">
+        <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-zinc-950/40 border border-border/60 text-sm md:text-base text-zinc-300 font-mono font-medium">
+          <span>👥</span>
+          <span>500+ Students Audited</span>
+        </div>
+        <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-zinc-950/40 border border-border/60 text-sm md:text-base text-zinc-300 font-mono font-medium">
+          <span>⭐</span>
+          <span>Small Group Workshop</span>
+        </div>
+        <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-zinc-950/40 border border-border/60 text-sm md:text-base text-zinc-300 font-mono font-medium">
+          <span>⏱</span>
+          <span>90-Minute Interactive Session</span>
+        </div>
+      </div>
+
+      {/* Primary CTA */}
+      <div className="pt-2">
+        <button
+          onClick={handleBookSession}
+          disabled={isBooking || session.sessionStatus === "Booked"}
+          className={cn(
+            "w-full px-10 py-5 font-bold text-sm md:text-base rounded-xl tracking-wide uppercase transition-all duration-300 min-h-[56px] flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_25px_rgba(59,130,246,0.2)] shrink-0",
+            session.sessionStatus === "Booked"
+              ? "bg-zinc-800 text-zinc-500 border border-zinc-700 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700 text-white border border-blue-500 hover:border-blue-600 hover:shadow-[0_4px_30px_rgba(59,130,246,0.3)]"
+          )}
+        >
+          {isBooking ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              Booking Bootcamp Seat...
+            </>
+          ) : session.sessionStatus === "Booked" ? (
+            <>Bootcamp Seat Booked ✓</>
+          ) : (
+            <>Book My Bootcamp Seat</>
+          )}
+        </button>
+      </div>
+
+      {/* FAQ Section */}
+      <div className="space-y-6 text-left bg-card border border-border rounded-2xl p-6 md:p-8">
+        <h3 className="text-base font-bold text-white uppercase tracking-wider font-sans border-b border-border/40 pb-2">Frequently Asked Questions</h3>
+        <div className="space-y-4 font-sans">
+          <div className="space-y-1">
+            <h4 className="text-white text-sm font-semibold">Is this Bootcamp completely free?</h4>
+            <p className="text-zinc-400 text-xs md:text-sm font-light leading-relaxed">
+              Yes, the Bootcamp session is completely free.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-white text-sm font-semibold">Is this coaching?</h4>
+            <p className="text-zinc-400 text-xs md:text-sm font-light leading-relaxed">
+              No. It is a diagnostic workshop designed to help you improve your study system based on your audit.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-white text-sm font-semibold">Do I need to bring anything?</h4>
+            <p className="text-zinc-400 text-xs md:text-sm font-light leading-relaxed">
+              Bring your latest mock test if available.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex flex-col items-center justify-center gap-1 py-8 text-[10px] text-zinc-600 font-mono border-t border-border/40">
+        <span>CNM System Labs</span>
+        <span>Driven by Rank Engine</span>
       </div>
     </div>
   );

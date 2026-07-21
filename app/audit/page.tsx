@@ -32,10 +32,11 @@ export default function AuditWizardPage() {
   const [loaderOpacity, setLoaderOpacity] = React.useState(1);
 
   const loaderTexts = [
-    "Analyzing Study Patterns...",
-    "Identifying Main Problems...",
-    "Calculating Potential Improvement...",
-    "Generating Personalized Report..."
+    "Analyzing your preparation pattern...",
+    "Reviewing your study habits...",
+    "Finding improvement opportunities...",
+    "Generating personalized insights...",
+    "Preparing your report..."
   ];
 
   const currentQuestion = questions[currentIdx];
@@ -316,16 +317,19 @@ export default function AuditWizardPage() {
 
     const timers: NodeJS.Timeout[] = [];
 
-    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 500));
-    timers.push(setTimeout(() => { setLoaderTextIdx(1); setLoaderOpacity(1); }, 650));
+    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 400));
+    timers.push(setTimeout(() => { setLoaderTextIdx(1); setLoaderOpacity(1); }, 500));
 
-    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 1150));
-    timers.push(setTimeout(() => { setLoaderTextIdx(2); setLoaderOpacity(1); }, 1300));
+    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 900));
+    timers.push(setTimeout(() => { setLoaderTextIdx(2); setLoaderOpacity(1); }, 1000));
 
-    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 1800));
-    timers.push(setTimeout(() => { setLoaderTextIdx(3); setLoaderOpacity(1); }, 1950));
+    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 1400));
+    timers.push(setTimeout(() => { setLoaderTextIdx(3); setLoaderOpacity(1); }, 1500));
 
-    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 2450));
+    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 1900));
+    timers.push(setTimeout(() => { setLoaderTextIdx(4); setLoaderOpacity(1); }, 2000));
+
+    timers.push(setTimeout(() => { setLoaderOpacity(0); }, 2400));
     timers.push(setTimeout(() => {
       timerDone = true;
       maybeNavigate();

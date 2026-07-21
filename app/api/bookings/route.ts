@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { BOOTCAMP_CONFIG } from "@/lib/config/bootcamp";
 
 
 interface BookingPayload {
@@ -126,7 +127,13 @@ async function sendWhatsAppAlert(data: BookingPayload): Promise<{ status: "Sent"
           if (val === "None") return "No Major Issue";
           return val;
         })(data.primaryBottleneck),
-        data.queueNumber || "",
+        (function(d) {
+          const src = (d as any).source || "Kiosk";
+          if (src === "Library") {
+            return `Library (Bootcamp: ${BOOTCAMP_CONFIG.date}, ${BOOTCAMP_CONFIG.time})`;
+          }
+          return d.queueNumber || "";
+        })(data),
         new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) + " (IST)"
       ]
     }
@@ -175,7 +182,7 @@ async function sendWhatsAppAlert(data: BookingPayload): Promise<{ status: "Sent"
 export async function POST(request: Request) {
   try {
     const data: BookingPayload = await request.json();
-    (data as any).source = "Kiosk";
+    (data as any).source = "Library";
     const phone = data.phone;
 
     // Clean phone number: remove whitespaces, dashes, parentheses
@@ -275,7 +282,7 @@ export async function POST(request: Request) {
           booking_id: booking_id,
           queue_number,
           whatsapp_status: whatsappStatus,
-          source: "Kiosk"
+          source: "Library"
         })
         .eq("id", existingBookingRowId)
         .select();
@@ -290,7 +297,7 @@ export async function POST(request: Request) {
           lead_id: leadId,
           queue_number,
           whatsapp_status: whatsappStatus,
-          source: "Kiosk"
+          source: "Library"
         })
         .select();
       insertedBooking = inserted;

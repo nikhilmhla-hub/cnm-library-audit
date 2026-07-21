@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase";
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    data.source = "Kiosk";
+    data.source = "Library";
     const name = data.name;
     const phone = data.phone;
 
@@ -232,7 +232,7 @@ export async function POST(request: Request) {
           archetype,
           bottleneck,
           status,
-          source: "Kiosk"
+          source: "Library"
         })
         .eq("id", leadId);
 
@@ -250,7 +250,7 @@ export async function POST(request: Request) {
             archetype,
             bottleneck,
             status,
-            source: "Kiosk"
+            source: "Library"
           })
           .eq("id", leadId);
         updateError = retryError;
@@ -306,7 +306,7 @@ export async function POST(request: Request) {
           bottleneck,
           queue_number: queueNumber,
           status,
-          source: "Kiosk"
+          source: "Library"
         })
         .select();
 
@@ -334,7 +334,7 @@ export async function POST(request: Request) {
               archetype,
               bottleneck,
               status,
-              source: "Kiosk"
+              source: "Library"
             })
             .eq("id", leadId)
             .select();
@@ -360,7 +360,7 @@ export async function POST(request: Request) {
             bottleneck,
             queue_number: queueNumber,
             status,
-            source: "Kiosk"
+            source: "Library"
           })
           .select();
         insertedLeads = retryData;
