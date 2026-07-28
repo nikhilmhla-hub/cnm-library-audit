@@ -70,3 +70,43 @@ body {
   padding: 0;
 }
 
+/* Recommended Next Step — soft shimmer attention animation */
+@keyframes shimmer-text {
+  0%, 100% {
+    color: #a1a1aa;
+    text-shadow: none;
+    letter-spacing: 0.2em;
+  }
+  50% {
+    color: #d4af37;
+    text-shadow: 0 0 12px rgba(212, 175, 55, 0.45), 0 0 24px rgba(212, 175, 55, 0.15);
+    letter-spacing: 0.22em;
+  }
+}
+
+.animate-shimmer-text {
+  animation: shimmer-text 3.5s ease-in-out infinite;
+}
+
+/* Upcoming Bootcamp Card — elegant slow gold border glow */
+@keyframes gold-border-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0px rgba(212, 175, 55, 0),
+      0 0 12px rgba(212, 175, 55, 0.08),
+      inset 0 0 0px rgba(212, 175, 55, 0);
+    border-color: rgba(212, 175, 55, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(212, 175, 55, 0.18),
+      0 0 40px rgba(212, 175, 55, 0.08),
+      inset 0 0 10px rgba(212, 175, 55, 0.04);
+    border-color: rgba(212, 175, 55, 0.65);
+  }
+}
+
+.animate-gold-border-glow {
+  animation: gold-border-glow 4s ease-in-out infinite;
+}
+

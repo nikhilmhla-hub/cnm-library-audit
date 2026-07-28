@@ -842,7 +842,7 @@ export default function ReportPage() {
       {/* Divider */}
       <div className="text-center py-4 space-y-1">
         <div className="text-zinc-700 text-sm font-mono tracking-widest leading-none">──────────────────────────</div>
-        <div className="text-zinc-400 text-xs font-mono uppercase tracking-[0.2em]">Recommended Next Step</div>
+        <div className="text-base md:text-lg font-bold font-mono uppercase animate-shimmer-text">Recommended Next Step</div>
         <div className="text-zinc-700 text-sm font-mono tracking-widest leading-none">──────────────────────────</div>
       </div>
 
@@ -871,13 +871,18 @@ export default function ReportPage() {
 
             {/* Badges Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-border/40 text-zinc-300 text-xs font-mono">
-                <span>📍</span>
-                <span>CNM System Labs</span>
-              </div>
+              <a
+                href="https://maps.app.goo.gl/Hma99SxdirGofdiD7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col gap-0.5 px-3 py-2 rounded-lg bg-zinc-900 border border-border/40 text-zinc-300 text-xs font-mono hover:border-gold/30 transition-colors"
+              >
+                <span className="flex items-center gap-1.5"><span>📍</span><span>CNM System Labs</span></span>
+                <span className="text-[10px] text-gold/70 font-mono">Click to view on Google Maps</span>
+              </a>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-border/40 text-zinc-300 text-xs font-mono">
                 <span>🕒</span>
-                <span>90 Minutes</span>
+                <span>{BOOTCAMP_CONFIG.duration}</span>
               </div>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-900 border border-border/40 text-zinc-300 text-xs font-mono">
                 <span>👥</span>
@@ -933,7 +938,7 @@ export default function ReportPage() {
       </div>
 
       {/* Upcoming Bootcamp Card */}
-      <div className="bg-card border-2 border-gold/40 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl space-y-6">
+      <div className="bg-card border-2 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-2xl space-y-6 animate-gold-border-glow">
         <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-gold to-transparent" />
         <div className="space-y-1 text-left">
           <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight font-sans">
@@ -956,7 +961,15 @@ export default function ReportPage() {
           </div>
           <div className="bg-[#1E1E1E]/80 border border-border p-4 rounded-xl space-y-1">
             <span className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider block">📍 Venue</span>
-            <span className="text-white text-sm md:text-base font-bold font-sans">{BOOTCAMP_CONFIG.venue}</span>
+            <a
+              href="https://maps.app.goo.gl/Hma99SxdirGofdiD7"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block hover:text-gold transition-colors"
+            >
+              <span className="text-white text-sm md:text-base font-bold font-sans hover:text-gold transition-colors block">{BOOTCAMP_CONFIG.venue}</span>
+              <span className="text-[10px] text-gold/70 font-mono">Click to view on Google Maps</span>
+            </a>
           </div>
           <div className="bg-[#1E1E1E]/80 border border-border p-4 rounded-xl space-y-1">
             <span className="text-zinc-500 text-[10px] font-mono uppercase tracking-wider block">👥 Format</span>
@@ -981,7 +994,7 @@ export default function ReportPage() {
         </div>
         <div className="flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-zinc-950/40 border border-border/60 text-sm md:text-base text-zinc-300 font-mono font-medium">
           <span>⏱</span>
-          <span>90-Minute Interactive Session</span>
+          <span>20-Minute Interactive Session</span>
         </div>
       </div>
 

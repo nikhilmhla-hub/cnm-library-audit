@@ -55,9 +55,17 @@ export default function ConfirmationPage() {
                 <span className="text-base">🕒</span>
                 <span>{BOOTCAMP_CONFIG.time}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-start gap-2">
                 <span className="text-base">📍</span>
-                <span>{BOOTCAMP_CONFIG.venue}</span>
+                <a
+                  href="https://maps.app.goo.gl/Hma99SxdirGofdiD7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-gold transition-colors flex flex-col gap-0.5"
+                >
+                  <span>{BOOTCAMP_CONFIG.venue}</span>
+                  <span className="text-[10px] text-gold/70 font-mono">Click to view on Google Maps</span>
+                </a>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-base">👥</span>
