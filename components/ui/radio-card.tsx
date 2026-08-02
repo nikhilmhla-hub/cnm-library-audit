@@ -7,13 +7,15 @@ import { Check } from "lucide-react";
 export interface RadioCardProps extends React.HTMLAttributes<HTMLButtonElement> {
   selected: boolean;
   title: string;
+  titleHindi?: string;
   description?: string;
+  descriptionHindi?: string;
   points?: string | number;
   disabled?: boolean;
 }
 
 const RadioCard = React.forwardRef<HTMLButtonElement, RadioCardProps>(
-  ({ selected, title, description, points, disabled = false, className, ...props }, ref) => {
+  ({ selected, title, titleHindi, description, descriptionHindi, points, disabled = false, className, ...props }, ref) => {
     return (
       <button
         ref={ref}
@@ -31,7 +33,7 @@ const RadioCard = React.forwardRef<HTMLButtonElement, RadioCardProps>(
         )}
         {...props}
       >
-        <div className="flex items-start gap-4 flex-1 pr-4">
+        <div className="flex items-start gap-4 flex-1 pr-4 min-w-0">
           {/* Custom Radio Circular Indicator */}
           <div
             className={cn(
@@ -45,7 +47,7 @@ const RadioCard = React.forwardRef<HTMLButtonElement, RadioCardProps>(
             {selected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
           </div>
 
-          <div className="space-y-1">
+          <div className="space-y-0.5 flex-1 min-w-0">
             <h4
               className={cn(
                 "font-semibold text-base leading-snug transition-colors",
@@ -54,9 +56,19 @@ const RadioCard = React.forwardRef<HTMLButtonElement, RadioCardProps>(
             >
               {title}
             </h4>
+            {titleHindi && (
+              <p className="text-[0.92rem] font-normal text-zinc-400 leading-snug font-[family-name:var(--font-devanagari),sans-serif] mt-1">
+                {titleHindi}
+              </p>
+            )}
             {description && (
-              <p className="text-zinc-400 text-sm font-light leading-relaxed">
+              <p className="text-zinc-400 text-sm font-light leading-relaxed mt-1">
                 {description}
+              </p>
+            )}
+            {descriptionHindi && (
+              <p className="text-[0.92rem] font-normal text-zinc-400/80 leading-relaxed font-[family-name:var(--font-devanagari),sans-serif] mt-1">
+                {descriptionHindi}
               </p>
             )}
           </div>

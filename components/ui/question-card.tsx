@@ -7,14 +7,17 @@ import { HelpCircle } from "lucide-react";
 
 export interface QuestionCardProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
+  titleHindi?: string;
   description?: string;
+  descriptionHindi?: string;
   helperText?: string;
+  helperTextHindi?: string;
   variant?: "default" | "glass";
   icon?: React.ReactNode;
 }
 
 const QuestionCard = React.forwardRef<HTMLDivElement, QuestionCardProps>(
-  ({ title, description, helperText, variant = "default", icon, children, className, ...props }, ref) => {
+  ({ title, titleHindi, description, descriptionHindi, helperText, helperTextHindi, variant = "default", icon, children, className, ...props }, ref) => {
     return (
       <Card
         ref={ref}
@@ -30,14 +33,26 @@ const QuestionCard = React.forwardRef<HTMLDivElement, QuestionCardProps>(
             <span className="text-gold shrink-0 mt-0.5">
               {icon || <HelpCircle className="h-6 w-6" />}
             </span>
-            <CardTitle className="text-xl md:text-2xl font-bold leading-relaxed text-white font-sans">
-              {title}
-            </CardTitle>
+            <div className="space-y-1">
+              <CardTitle className="text-xl md:text-2xl font-bold leading-relaxed text-white font-sans">
+                {title}
+              </CardTitle>
+              {titleHindi && (
+                <p className="text-lg md:text-xl font-normal text-zinc-400 leading-relaxed font-[family-name:var(--font-devanagari),sans-serif] mt-1">
+                  {titleHindi}
+                </p>
+              )}
+            </div>
           </div>
           {description && (
             <CardDescription className="text-zinc-400 text-sm font-light pl-9 leading-relaxed">
               {description}
             </CardDescription>
+          )}
+          {descriptionHindi && (
+            <p className="text-sm font-normal text-zinc-500 pl-9 leading-relaxed font-[family-name:var(--font-devanagari),sans-serif] mt-1">
+              {descriptionHindi}
+            </p>
           )}
         </CardHeader>
 
@@ -47,9 +62,16 @@ const QuestionCard = React.forwardRef<HTMLDivElement, QuestionCardProps>(
 
           {/* Helper Text Compliance Reminder */}
           {helperText && (
-            <p className="text-xs text-zinc-500 font-mono italic pt-2">
-              {helperText}
-            </p>
+            <div className="pt-2">
+              <p className="text-xs text-zinc-500 font-mono italic">
+                {helperText}
+              </p>
+              {helperTextHindi && (
+                <p className="text-[11px] text-zinc-600 font-[family-name:var(--font-devanagari),sans-serif] mt-0.5">
+                  {helperTextHindi}
+                </p>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
